@@ -1,9 +1,6 @@
 import hlt
 import logging
-
-import navigation
-import offense
-import analytics
+import bot_routines
 
 game = hlt.Game("D4m0b0t - v3.0a")
 
@@ -11,7 +8,8 @@ game = hlt.Game("D4m0b0t - v3.0a")
 #Maybe it'll motivate me to coding a little less lazily here.
 
 #global constants
-DEBUGGING = {
+class GConstants:
+    DEBUGGING = {
         'ship_loop': True,
         'docking_procedures': False,
         'reinforce': False,
@@ -23,100 +21,105 @@ DEBUGGING = {
         'boobytrapping': False,
         'enemy_data': True,
         'method_entry': True
-}
-ALGORITHM = {
+    }
+    ALGORITHM = {
         'reinforce': False,
         'offense': True,
         'ram_ships_when_weak': True,
         'kamikaze': False,
         'boobytrapping': True
-}
+    }
 
-PRODUCTION = 6
-DOCKING_TURNS = 5
-MAX_FIRING_DISTANCE = 5
+    PRODUCTION = 6
+    DOCKING_TURNS = 5
+    MAX_FIRING_DISTANCE = 5
 
 #globals
-planets_to_avoid = []
-dock_process_list = {}
-undock_process_list = {}
-enemy_data = {}
+class GVariables:
+    planets_to_avoid = []
+    dock_process_list = {}
+    undock_process_list = {}
+    enemy_data = {}
 
-turn = 0
+    turn = 0
 
-def docked_actions(current_ship):
-    """
-    Determine what to do with our docked ship
-    :param Ship current_ship:
-    :return: command to append to the command_queue
-    :rtype: List
-    """
-    if DEBUGGING['method_entry']:
-        log.debug("docked_actions():")
+class Actions:
+    def docked_actions(current_ship):
+        """
+        Determine what to do with our docked ship
+        :param Ship current_ship:
+        :return: command to append to the command_queue
+        :rtype: List
+        """
+        if GConstants.DEBUGGING['method_entry']:
+            log.debug("docked_actions():")
 
-    if DEBUGGING['ship_loop']:
-        log.debug("-+=Docked ship #" + str(current_ship.id) + "=+-")
+        if GConstants.DEBUGGING['ship_loop']:
+            log.debug("-+=Docked ship #" + str(current_ship.id) + "=+-")
 
-    # did we just complete docking?
-    if current_ship in dock_process_list.keys():
-        if DEBUGGING['docking_procedures']:
-            log.debug(" - completed docking")
+        # did we just complete docking?
+        if current_ship in GVariables.dock_process_list.keys():
+            if GConstants.DEBUGGING['docking_procedures']:
+                log.debug(" - completed docking")
 
-        dock_process_list.remove(current_ship)
+            GVariables.dock_process_list.remove(current_ship)
 
-    if ALGORITHM['boobytrapping']:  # fully docked
-        # is it time to bid thee farewell?
-        if current_ship.planet.remaining_resources <= (
-                current_ship.planet.num_docking_spots * DOCKING_TURNS * PRODUCTION) + 10:
-            # syntax/logic in the following conditional (specifically the 'not') may be phrased wrong
-            if not current_ship.planet in planets_to_avoid:
-                if DEBUGGING['boobytrapping']:
-                    log.debug("Leaving a present")
+        if GConstants.ALGORITHM['boobytrapping']:  # fully docked
+            # is it time to bid thee farewell?
+            if current_ship.planet.remaining_resources <= (
+                    current_ship.planet.num_docking_spots * GConstants.DOCKING_TURNS * GConstants.PRODUCTION) + 10:
+                # syntax/logic in the following conditional (specifically the 'not') may be phrased wrong
+                if not current_ship.planet in GVariables.planets_to_avoid:
+                    if GConstants.DEBUGGING['boobytrapping']:
+                        log.debug("Leaving a present")
 
-                planets_to_avoid.append(current_ship.planet)
-                undock_process_list[current_ship] = current_ship.planet
-                command_queue.append(ship.undock(current_ship.planet))
+                    GVariables.planets_to_avoid.append(current_ship.planet)
+                    GVariables.undock_process_list[current_ship] = current_ship.planet
+                    command_queue.append(ship.undock(current_ship.planet))
 
 
-def undocked_actions(current_ship):
-    """
-    Determine what to do with the undocked ship
-    :param Ship current_ship:
-    :return: command to append to the command_queue
-    :rtype: List
-    """
-    if DEBUGGING['method_entry']:
-        log.debug("undocked_actions():")
+    def undocked_actions(current_ship):
+        """
+        Determine what to do with the undocked ship
+        :param Ship current_ship:
+        :return: command to append to the command_queue
+        :rtype: List
+        """
+        if GConstants.DEBUGGING['method_entry']:
+            log.debug("undocked_actions():")
 
-    if DEBUGGING['ship_loop']:
-        log.debug("-+=Undocked ship #" + str(current_ship.id) + "=+-")
+        if GConstants.DEBUGGING['ship_loop']:
+            log.debug("-+=Undocked ship #" + str(current_ship.id) + "=+-")
 
-    # did we just complete undocking?
-    if current_ship in undock_process_list.keys():
-        if DEBUGGING['docking_procedures']:
-            log.debug(" - completed undocking")
+        # did we just complete undocking?
+        if current_ship in GVariables.undock_process_list.keys():
+            if GConstants.DEBUGGING['docking_procedures']:
+                log.debug(" - completed undocking")
 
-        undock_process_list.remove(current_ship)
+            GVariables.undock_process_list.remove(current_ship)
 
-    success = False
-    ranked_planets_by_distance = entity_sort_by_distance(current_ship, game_map.all_planets())
-    ranked_our_planets_by_docked = planet_sort_ours_by_docked(game_map.all_planets())
-    ranked_untapped_planets = remove_tapped_planets(ranked_planets_by_distance, planets_to_avoid)
-    enemies = get_enemy_ships()
+        success = False
+        ranked_planets_by_distance = bot_routines.Analytics.entity_sort_by_distance(current_ship, game_map.all_planets())
+        ranked_our_planets_by_docked = bot_routines.Analytics.planet_sort_ours_by_docked(game_map.all_planets())
+        ranked_untapped_planets = \
+            bot_routines.Analytics.remove_tapped_planets(ranked_planets_by_distance, GVariables.planets_to_avoid)
+        enemies = bot_routines.Analytics.get_enemy_ships()
 
-    # get our command, if navigation to/docking with a planet is the best course of action
-    # else None
-    navigate_command = target_planet(current_ship, ranked_planets_by_distance, ranked_our_planets_by_docked, \
-                                     ranked_untapped_planets)
+        # get our command, if navigation to/docking with a planet is the best course of action
+        # else None
+        navigate_command = GVariables.target_planet( \
+                                        current_ship, ranked_planets_by_distance, ranked_our_planets_by_docked, \
+                                        ranked_untapped_planets)
 
-    if not navigate_command:
-        # potential_angle = other_entities_in_vicinity(current_ship, enemies, ranked_untapped_planets[0]['distance'])
-        if ALGORITHM['offense']:  # and potential_angle:
-            navigate_command = go_offensive(current_ship, enemies)
-        elif ALGORITHM['reinforce'] and len(ranked_our_planets_by_docked) > 0:
-            navigate_command = reinforce_planet(current_ship, ranked_our_planets_by_docked, ranked_untapped_planets)
+        if not navigate_command:
+            # potential_angle = other_entities_in_vicinity(current_ship, enemies, ranked_untapped_planets[0]['distance'])
+            if GConstants.ALGORITHM['offense']:  # and potential_angle:
+                navigate_command = bot_routines.Offense.go_offensive(current_ship, enemies)
+            elif GConstants.ALGORITHM['reinforce'] and len(ranked_our_planets_by_docked) > 0:
+                navigate_command = \
+                    Navigation.reinforce_planet(current_ship, ranked_our_planets_by_docked, ranked_untapped_planets)
 
-    return navigate_command
+        return navigate_command
 
 #entrance
 log = logging.getLogger(__name__)
@@ -124,7 +127,7 @@ logging.info("D4m0b0t v3.0a active")
 
 # begin primary game loop
 while True:
-    if DEBUGGING['ship_loop']:
+    if GConstants.DEBUGGING['ship_loop']:
         log.debug("-+Beginning turn+-")
 
     game_map = game.update_map()
