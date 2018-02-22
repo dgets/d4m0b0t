@@ -1,3 +1,5 @@
+#include D4m0B0t.py
+
 def go_offensive(current_ship, enemies):
     """
     Returns navigation command for offense, or None if not the best course of action at this juncture
@@ -8,7 +10,7 @@ def go_offensive(current_ship, enemies):
     """
     navigate_command = None
 
-    if DEBUGGING['offense']:
+    if D4m0B0t.DEBUGGING['offense']:
         log.debug("Engaging enemy")
 
     close_enemies = entity_sort_by_distance(current_ship, enemies)

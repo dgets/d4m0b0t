@@ -1,6 +1,5 @@
 import hlt
 import logging
-from operator import itemgetter
 
 import navigation
 import offense
