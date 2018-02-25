@@ -62,7 +62,7 @@ class Navigation:
         navigation_command = None
 
         # reinforce that sucker
-        if DEBUGGING['reinforce']:
+        if GConstants.DEBUGGING['reinforce']:
             log.debug("Reinforcing planet #" + str(ranked_our_planets_by_docked[0]['entity_object'].id))
 
         if current_ship.can_dock(ranked_our_planets_by_docked[0]['entity_object']):
