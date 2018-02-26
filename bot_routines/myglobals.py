@@ -35,3 +35,4 @@ enemy_data = {}
  
 turn = 0
 log = logging.getLogger(__name__)
+game_map = None
