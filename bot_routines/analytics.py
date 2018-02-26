@@ -1,3 +1,6 @@
+from . import myglobals
+from operator import itemgetter
+
 def count_ships_in_firing_range(current_ship, entities_for_consideration, max_range):
     """
     Determine how many ships are within our offensive bubble
@@ -9,6 +12,7 @@ def count_ships_in_firing_range(current_ship, entities_for_consideration, max_ra
     """
     cntr = 0
     # enemies_potentially_in_range = entity_sort_by_distance(current_ship, enemies)
+    #is this still needed?
     for current_enemy in entities_for_consideration:
         if current_enemy['distance'] <= max_range:
             cntr += 1
@@ -17,7 +21,6 @@ def count_ships_in_firing_range(current_ship, entities_for_consideration, max_ra
 
     return cntr
 
-
 def remove_held_planets(planets_list):
     """
     Remove all planets from the list that are already held by a player
@@ -25,18 +28,18 @@ def remove_held_planets(planets_list):
     :return List with owned planets removed:
     :rtype: List of Typles
     """
-    if DEBUGGING['method_entry']:
-        log.debug("remove_held_planets():")
+    if myglobals.DEBUGGING['method_entry']:
+        myglobals.log.debug("remove_held_planets():")
 
     for possibly_owned_planet in planets_list:
         if not possibly_owned_planet:
-            if DEBUGGING['targeting']:
-                log.debug(" - removing owned planet #" + str(possibly_owned_planet['entity_object'].id) + " from list")
+            if myglobals.DEBUGGING['targeting']:
+                myglobals.log.debug(" - removing owned planet #" + str(possibly_owned_planet['entity_object'].id) \
+                        + " from list")
 
             planets_list.remove(possibly_owned_planet)
 
     return planets_list
-
 
 def entity_sort_by_distance(current_ship, planet_list):
     """
@@ -46,15 +49,14 @@ def entity_sort_by_distance(current_ship, planet_list):
     :return: List of tuples containing entity_object & distance from current_ship
     :rtype: List of Tuples
     """
-    if DEBUGGING['method_entry']:
-        log.debug("entity_sort_by_distance():")
+    if myglobals.DEBUGGING['method_entry']:
+        myglobals.log.debug("entity_sort_by_distance():")
 
     nang = []
     for ouah in planet_list:
         nang.append({'entity_object': ouah, 'distance': ouah.calculate_distance_between(current_ship)})
 
     return sorted(nang, key=itemgetter('distance'))
-
 
 def planet_sort_ours_by_docked(planet_list):
     """
@@ -63,12 +65,12 @@ def planet_sort_ours_by_docked(planet_list):
     :return: List of tuples of weighted planets
     :rtype: List of Tuples
     """
-    if DEBUGGING['method_entry']:
-        log.debug("planet_sort_by_docked():")
+    if myglobals.DEBUGGING['method_entry']:
+        myglobals.log.debug("planet_sort_by_docked():")
 
     nang = []
     for ouah in planet_list:
-        if ouah.owner == game_map.get_me():
+        if ouah.owner == myglobals.game_map.get_me():
             nang.append({'entity_object': ouah, 'number_docked': len(ouah.all_docked_ships())})
 
     if len(nang) > 0:
@@ -79,7 +81,6 @@ def planet_sort_ours_by_docked(planet_list):
 
     return sorted(nang, key=itemgetter('number_docked'))
 
-
 def other_entities_in_vicinity(current_entity, other_entities, scan_distance):
     """
     Check to see if there are any more specified entities within the immediate vicinity
@@ -89,8 +90,8 @@ def other_entities_in_vicinity(current_entity, other_entities, scan_distance):
     :return: Collision angle if any
     :rtype: Collision angle or none
     """
-    if DEBUGGING['method_entry']:
-        log.debug("other_entities_in_vicinity()")
+    if myglobals.DEBUGGING['method_entry']:
+        myglobals.log.debug("other_entities_in_vicinity()")
 
     # closest_docked_distance = scan_distance
     target_planet = None
@@ -102,28 +103,28 @@ def other_entities_in_vicinity(current_entity, other_entities, scan_distance):
             continue
 
         proximity = int(current_entity.calculate_distance_between(other_entity))
-        if DEBUGGING['kamikaze']:
-            log.debug("\t- current_entity's proximity: " + str(proximity) + " vs scan_distance: " + str(scan_distance))
+        if myglobals.DEBUGGING['kamikaze']:
+            myglobals.log.debug("\t- current_entity's proximity: " + str(proximity) + " vs scan_distance: " + \
+                    str(scan_distance))
 
         if proximity < scan_distance:
-            if DEBUGGING['kamikaze']:
-                log.debug("\t- proximity is less than scan_distance")
+            if myglobals.DEBUGGING['kamikaze']:
+                myglobals.log.debug("\t- proximity is less than scan_distance")
 
-            if current_entity.docking_status == current_entity.DockingStatus.DOCKED or \
-                    current_entity.docking_status == current_entity.DockingStatus.DOCKING:
-                if DEBUGGING['kamikaze']:
-                    log.debug("\t\t- setting target_planet to current_entity.planet")
+        if current_entity.docking_status == current_entity.DockingStatus.DOCKED or \
+                current_entity.docking_status == current_entity.DockingStatus.DOCKING:
+            if myglobals.DEBUGGING['kamikaze']:
+                myglobals.log.debug("\t\t- setting target_planet to current_entity.planet")
 
-                target_planet = current_entity.planet
-                break
-            else:
-                continue
+            target_planet = current_entity.planet
+            break
+        else:
+            continue
 
     if target_planet:
         return current_entity.calculate_angle_between(target_planet)
 
     return None
-
 
 def get_enemy_ships():
     """
@@ -131,17 +132,16 @@ def get_enemy_ships():
     :return: all enemy ships
     :rtype: List of ships
     """
-    if DEBUGGING['method_entry']:
-        log.debug("get_enemy_ships():")
+    if myglobals.DEBUGGING['method_entry']:
+        myglobals.log.debug("get_enemy_ships():")
 
     enemy_ships = []
-    for jackass in game_map.all_players():
-        if not jackass == game_map.get_me():
+    for jackass in myglobals.game_map.all_players():
+        if not jackass == myglobals.game_map.get_me():
             for ship in jackass.all_ships():
                 enemy_ships.append(ship)
 
     return enemy_ships
-
 
 def remove_tapped_planets(testing_planets, avoid_planets):
     """
@@ -151,8 +151,8 @@ def remove_tapped_planets(testing_planets, avoid_planets):
     :return: planets sans tapped planets
     :rtype: List of planets
     """
-    if DEBUGGING['method_entry']:
-        log.debug("remove_tapped_planets():")
+    if myglobals.DEBUGGING['method_entry']:
+        myglobals.log.debug("remove_tapped_planets():")
 
     for bogus in avoid_planets:
         if bogus in testing_planets:
