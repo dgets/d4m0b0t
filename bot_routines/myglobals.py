@@ -29,6 +29,7 @@ MAX_FIRING_DISTANCE = 5
  
 # variables
 planets_to_avoid = []
+targeted_list = []
 dock_process_list = {}
 undock_process_list = {}
 enemy_data = {}
@@ -36,3 +37,6 @@ enemy_data = {}
 turn = 0
 log = logging.getLogger(__name__)
 game_map = None
+default_speed = None
+my_id = None
+
