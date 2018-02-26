@@ -1,3 +1,4 @@
+import hlt
 from . import analytics, myglobals
 
 def go_offensive(current_ship, enemies):
@@ -10,12 +11,12 @@ def go_offensive(current_ship, enemies):
     """
     navigate_command = None
 
-    if myglobalS.DEBUGGING['offense']:
+    if myglobals.DEBUGGING['offense']:
         myglobals.log.debug("Engaging enemy")
 
-    close_enemies = entity_sort_by_distance(current_ship, enemies)
+    close_enemies = analytics.entity_sort_by_distance(current_ship, enemies)
     closest_enemy = close_enemies[0]['entity_object']
-    close_friendlies = entity_sort_by_distance(current_ship, myglobals.game_map.get_me().all_ships())
+    close_friendlies = analytics.entity_sort_by_distance(current_ship, myglobals.game_map.get_me().all_ships())
 
     # implementation of kamikaze was never completed
     if myglobals.ALGORITHM['kamikaze']:
@@ -35,8 +36,8 @@ def go_offensive(current_ship, enemies):
         if myglobals.DEBUGGING['offense']:
             myglobals.log.debug(" - engaging ship #" + str(closest_enemy.id))
 
-        num_enemies_in_range = count_ships_in_firing_range(current_ship, close_enemies, myglobals.MAX_FIRING_DISTANCE)
-        num_friendlies_in_range = count_ships_in_firing_range(current_ship, close_friendlies, \
+        num_enemies_in_range = analytics.count_ships_in_firing_range(current_ship, close_enemies, myglobals.MAX_FIRING_DISTANCE)
+        num_friendlies_in_range = analytics.count_ships_in_firing_range(current_ship, close_friendlies, \
                 myglobals.MAX_FIRING_DISTANCE)
 
         if not myglobals.ALGORITHM['ram_ships_when_weak'] or (closest_enemy.health <= current_ship.health and

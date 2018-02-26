@@ -3,7 +3,8 @@ import logging
 import bot_routines
 
 game = hlt.Game("D4m0b0t - v3.0a")
-bot_routines.myglobals.my_id = game.update_map().get_me().id
+bot_routines.myglobals.game_map = game.update_map()
+bot_routines.myglobals.my_id = bot_routines.myglobals.game_map.get_me().id
 bot_routines.myglobals.default_speed = hlt.constants.MAX_SPEED
 
 #entrance
@@ -14,7 +15,8 @@ while True:
     if bot_routines.myglobals.DEBUGGING['ship_loop']:
         bot_routines.myglobals.log.debug("-+Beginning turn+-")
 
-    bot_routines.myglobals.game_map = game.update_map()
+    if bot_routines.myglobals.turn > 0:
+        bot_routines.myglobals.game_map = game.update_map()
     
     command_queue = []
     #targeted_list = []    #not certain if this needs to be here, or in globals
