@@ -21,6 +21,22 @@ while True:
     command_queue = []
     #targeted_list = []    #not certain if this needs to be here, or in globals
 
+    #figger out wzza for each of their ships
+    for ship in bot_routines.analytics.get_enemy_ships():
+        found = False
+        for enemy_telemetry_entry in bot_routines.myglobals.enemy_telemetry:
+            if ship.id == enemy_telemetry_entry.id:
+                found = True
+                enemy_telemetry_entry.new_turn(ship.x, ship.y)
+            else:
+                #create new telemetry entry
+                
+        if found:
+            continue
+        
+    #here we should probably check to see if we need to remove entries from telemetry
+
+    #figger out wzza for each of my ships
     for ship in bot_routines.myglobals.game_map.get_me().all_ships():
         if ship.docking_status == ship.DockingStatus.DOCKED:
             new_command = bot_routines.primary_action.docked_actions(ship)
