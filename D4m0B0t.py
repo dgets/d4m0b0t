@@ -20,20 +20,31 @@ while True:
     
     command_queue = []
     #targeted_list = []    #not certain if this needs to be here, or in globals
+    #would it improve efficiency to have the following entry be in globals?  ie less passing of it around?
+    enemies = bot_routines.analytics.get_enemy_ships()
+    
+    #clean up any ships that've been destroyed
+    for enemy_telemetry_entry in bot_routines.myglobals.enemy_telemetry:
+        if not enemy_telemetry_entry.still_alive(enemies):
+            bot_routines.myglobals.enemy_telemetry.remove(enemy_telemetry_entry)
 
     #figger out wzza for each of their ships
-    for ship in bot_routines.analytics.get_enemy_ships():
+    for ship in enemies:    #bot_routines.analytics.get_enemy_ships():
         found = False
+        
+        #if len(bot_routines.myglobals.enemy_telemetry) > 0:
         for enemy_telemetry_entry in bot_routines.myglobals.enemy_telemetry:
             if ship.id == enemy_telemetry_entry.id:
                 found = True
-                enemy_telemetry_entry.new_turn(ship.x, ship.y)
-            else:
-                #create new telemetry entry
-                
+                enemy_telemetry_entry.update(ship.x, ship.y)
+                break
+        
         if found:
             continue
-        
+        else:
+            #create new telemetry entry
+            bot_routines.myglobals.enemy_telemetry.append(bot_routines.telemetry.EnemyData(ship.id, ship.x, ship.y))
+            
     #here we should probably check to see if we need to remove entries from telemetry
 
     #figger out wzza for each of my ships
