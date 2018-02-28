@@ -4,6 +4,12 @@ from math import atan2, degrees, sqrt
 from . import myglobals, analytics
 
 class EnemyData:
+    """
+    Class represents an entry in the telemetry data for one enemy.  Currently
+    this only holds positional data for the past 2 turns, and target weight
+    based on the last 5 turns.
+    """
+    
     def __init__(self, ship_id, x, y):
         if myglobals.DEBUGGING['enemy_data']:
             myglobals.log.debug("Initializing EnemyData for id: " + str(ship_id))
@@ -17,14 +23,24 @@ class EnemyData:
         #self.y2 = self.y1
         self.y1 = y
 
-        self.speed = None
-        self.angle = None
+        self.vector = {"angle": None, "magnitude": None}
+        #self.speed = None
+        #self.angle = None
         self.target_weight = 0
         #self.turn_number = 0
         
     def update(self, x, y):
+        """
+        Updates object fields.  Specifically, adds and/or properly rotates x &
+        y coordinates, processes data (beginning @ 2nd turn after obtaining
+        valid data), and stores the results while valid.
+        """
+        
+        if myglobals.DEBUGGING['method_entry']:
+            myglobals.log.debug("EnemyData.update():")
+            
         #update coordinates
-        #NOTE: change coordinates & speed+angle to associative/tuples
+        #NOTE: change coordinate pairs to associative/tuples (?)
         self.x2 = self.x1
         self.y2 = self.y1
         self.x1 = x
@@ -38,17 +54,27 @@ class EnemyData:
             delta_x = self.x1 - self.x2
             delta_y = self.y1 - self.y2
             
-            self.speed = sqrt((delta_x ** 2) + (delta_y ** 2))
-            self.angle = atan2(delta_y, delta_x)
+            self.vector["angle": atan2(delta_y, delta_x), "magnitude": sqrt((delta_x ** 2) + (delta_y ** 2))]
+            #self.speed = sqrt((delta_x ** 2) + (delta_y ** 2))
+            #self.angle = atan2(delta_y, delta_x)
             
             if myglobals.DEBUGGING['enemy_data']:
-                myglobals.log.debug("Enemy (id #" + str(self.id) + ") speed is " + str(self.speed) + ", angle is " + 
-                                    str(self.angle) + " degrees @ (" + str(self.x1) + "," + str(self.x2) + ")")
+                myglobals.log.debug("Enemy (id #" + str(self.id) + ") speed is " + str(self.vector["magnitude"]) + 
+                                    ", angle is " + str(self.vector["angle"]) + " degrees @ (" + str(self.x1) + "," +
+                                    str(self.x2) + ")")
         else:
             self.speed = 0
             self.angle = None
     
     def still_alive(self, enemy_list):
+        """
+        Returns a boolean signifying whether or not the entity represented
+        is still active.
+        """
+        
+        if myglobals.DEBUGGING['method_entry']:
+            myglobals.log.debug("EnemyData.still_alive():")
+            
         for enemy in enemy_list:
             if self.id == enemy.id:
                 return True
@@ -56,7 +82,21 @@ class EnemyData:
         return False
     
     def determine_probable_target(self):
-        if speed == 0:
+        """
+        Tries (with rudimentary trajectory analysis, at this point) to
+        determine the probable target (planet or entity) of this enemy.
+        Hopefully, despite how simple this determination is made, it will
+        still be valid enough of the time to yield an improvement in 'smart'
+        decision making.
+        """
+        #NOTE: This method should be broken up a little bit more
+        
+        if myglobals.DEBUGGING['method_entry']:
+            myglobals.log.debug("EnemyData.determine_probable_target():")
+            
+        if self.vector['speed'] == 0:
+            #if speed is 0, but docked at a planet, we probably want to keep the target set at the docked planet :P
+            #also are we going to have issues here because the speed component of the vector was a double?
             self.probable_target = None
             self.target_weight = 0
             return
@@ -66,6 +106,9 @@ class EnemyData:
             if hlt.intersect_segment_circle(
                 self.ship_entity, potential_destination, {"x": self.x, "y": self.y, 
                                                           "r": potential_destination.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
+                if myglobals.DEBUGGING['enemy_data']:
+                    myglobals.log.debug("  enemy #" + str(self.id) + "'s trajectory intersects planet #" + 
+                                        str(potential_destination.id))
                 hit = True
                 if self.probable_target == potential_destination and self.target_weight < myglobals.TARGET_WEIGHT_LIMIT:
                     self.target_weight += 1
@@ -82,6 +125,9 @@ class EnemyData:
                 if hlt.intersect_segment_circle(
                     self.ship_entity, potential_target, {"x": self.x, "y": self.y,
                                                          "r": potential_target.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
+                    if myglobals.DEBUGGING['enemy_data']:
+                        myglobals.log.debug(" enemy #" + str(self.id) + "'s trajectory intersects enemy ship #" +
+                                            str(potential_target.id))
                     hit = True
                     if self.probable_target == potential_target and self.target_weight < myglobals.TARGET_WEIGHT_LIMIT:
                         self.target_weight += 1
@@ -93,6 +139,26 @@ class EnemyData:
                     break
                 
         if not hit:
+            for potential_target in bot_routines.myglobals.game_map.get_me().all_ships():
+                if hlt.intersect_segment_circle(
+                    self.ship_entity, potential_target, {"x": self.x, "y": self.y,
+                                                         "r": potential_target.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
+                    if myglobals.DEBUGGING['enemy_data']:
+                        myglobals.log.debug(" enemy #" + str(self.id) + "'s trajectory intersects friendly ship #" +
+                                            str(potential_target.id))
+                    hit = True
+                    if self.probable_target == potential_target and self.target_weight < myglobals.TARGET_WEIGHT_LIMIT:
+                        self.target_weight += 1
+                    elif self.probable_target != potential_target and self.target_weight > 0:
+                        self.target_weight -= 1
+                    else:
+                        self.probable_target = potential_target
+                        
+                    break
+                
+        if not hit:
+            if myglobals.DEBUGGING['enemy_data']:
+                myglobals.log.debug(" found no potential target/destination for enemy #" + str(self.id))
             self.probable_target = None
             
         
