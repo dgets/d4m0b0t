@@ -54,7 +54,7 @@ class EnemyData:
             delta_x = self.x1 - self.x2
             delta_y = self.y1 - self.y2
             
-            self.vector["angle": atan2(delta_y, delta_x), "magnitude": sqrt((delta_x ** 2) + (delta_y ** 2))]
+            self.vector = {"angle": atan2(delta_y, delta_x), "magnitude": sqrt((delta_x ** 2) + (delta_y ** 2))}
             #self.speed = sqrt((delta_x ** 2) + (delta_y ** 2))
             #self.angle = atan2(delta_y, delta_x)
             
