@@ -18,14 +18,11 @@ class EnemyData:
         self.id = ship_id
 
         #this is only run @ instantiation; too much shit is in here
-        #self.x2 = self.x1
-        self.x1 = x
-        #self.y2 = self.y1
-        self.y1 = y
+        self.coord = {"x": x, "y": y}
+        #self.x1 = x
+        #self.y1 = y
 
         self.vector = {"angle": None, "magnitude": None}
-        #self.speed = None
-        #self.angle = None
         self.target_weight = 0
         #self.turn_number = 0
         
@@ -40,28 +37,27 @@ class EnemyData:
             myglobals.log.debug("EnemyData.update():")
             
         #update coordinates
-        #NOTE: change coordinate pairs to associative/tuples (?)
-        self.x2 = self.x1
-        self.y2 = self.y1
-        self.x1 = x
-        self.y1 = y
+        self.past_coord = {"x": self.coord["x"], "y": self.coord["y"]}
+        #self.x2 = self.x1
+        #self.y2 = self.y1
+        self.coord = {"x": x, "y": y}
+        #self.x1 = x
+        #self.y1 = y
         
         #self.turn_number += 1
         
         #update vector info?
-        if not self.x1 == self.x2 and not self.y1 == self.y2:
+        if not self.coord["x"] == self.past_coord["x"] and not self.coord["y"] == self.past_coord["y"]:
             #we have enough data to put together vector components
-            delta_x = self.x1 - self.x2
-            delta_y = self.y1 - self.y2
+            delta_x = self.coord["x"] - self.past_coord["x"]
+            delta_y = self.coord["y"] - self.past_coord["y"]
             
             self.vector = {"angle": atan2(delta_y, delta_x), "magnitude": sqrt((delta_x ** 2) + (delta_y ** 2))}
-            #self.speed = sqrt((delta_x ** 2) + (delta_y ** 2))
-            #self.angle = atan2(delta_y, delta_x)
             
             if myglobals.DEBUGGING['enemy_data']:
                 myglobals.log.debug("Enemy (id #" + str(self.id) + ") speed is " + str(self.vector["magnitude"]) + 
-                                    ", angle is " + str(self.vector["angle"]) + " degrees @ (" + str(self.x1) + "," +
-                                    str(self.x2) + ")")
+                                    ", angle is " + str(self.vector["angle"]) + " degrees @ (" + str(self.coord["x"]) + "," +
+                                    str(self.coord["y"]) + ")")
         else:
             self.speed = 0
             self.angle = None
@@ -104,7 +100,7 @@ class EnemyData:
         hit = False
         for potential_destination in myglobals.game_map.all_planets():
             if hlt.intersect_segment_circle(
-                self.ship_entity, potential_destination, {"x": self.x, "y": self.y, 
+                self.ship_entity, potential_destination, {"x": self.coord["x"], "y": self.coord["y"], 
                                                           "r": potential_destination.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
                 if myglobals.DEBUGGING['enemy_data']:
                     myglobals.log.debug("  enemy #" + str(self.id) + "'s trajectory intersects planet #" + 
@@ -117,13 +113,12 @@ class EnemyData:
                 else: #if self.probable_target != potential_destination:
                     self.probable_target = potential_destinion
                     
-                #I do believe we'll weight on implementing target weight for a bit here
                 break
 
         if not hit:
             for potential_target in analytics.get_enemy_ships():
                 if hlt.intersect_segment_circle(
-                    self.ship_entity, potential_target, {"x": self.x, "y": self.y,
+                    self.ship_entity, potential_target, {"x": self.coord["x"], "y": self.coord["y"],
                                                          "r": potential_target.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
                     if myglobals.DEBUGGING['enemy_data']:
                         myglobals.log.debug(" enemy #" + str(self.id) + "'s trajectory intersects enemy ship #" +
@@ -141,7 +136,7 @@ class EnemyData:
         if not hit:
             for potential_target in bot_routines.myglobals.game_map.get_me().all_ships():
                 if hlt.intersect_segment_circle(
-                    self.ship_entity, potential_target, {"x": self.x, "y": self.y,
+                    self.ship_entity, potential_target, {"x": self.coord["x"], "y": self.coord["y"],
                                                          "r": potential_target.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
                     if myglobals.DEBUGGING['enemy_data']:
                         myglobals.log.debug(" enemy #" + str(self.id) + "'s trajectory intersects friendly ship #" +
