@@ -97,63 +97,50 @@ class EnemyData:
             self.target_weight = 0
             return
         
-        hit = False
-        for potential_destination in myglobals.game_map.all_planets():
-            if hlt.intersect_segment_circle(
-                self.ship_entity, potential_destination, {"x": self.coord["x"], "y": self.coord["y"], 
-                                                          "r": potential_destination.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
-                if myglobals.DEBUGGING['enemy_data']:
-                    myglobals.log.debug("  enemy #" + str(self.id) + "'s trajectory intersects planet #" + 
-                                        str(potential_destination.id))
-                hit = True
-                if self.probable_target == potential_destination and self.target_weight < myglobals.TARGET_WEIGHT_LIMIT:
-                    self.target_weight += 1
-                elif self.probable_target != potential_destination and self.target_weight > 0:
-                    self.target_weight -= 1
-                else: #if self.probable_target != potential_destination:
-                    self.probable_target = potential_destinion
-                    
-                break
-
+        hit = check_group_for_intersect(myglobals.game_map.all_planets())
         if not hit:
-            for potential_target in analytics.get_enemy_ships():
-                if hlt.intersect_segment_circle(
-                    self.ship_entity, potential_target, {"x": self.coord["x"], "y": self.coord["y"],
-                                                         "r": potential_target.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
-                    if myglobals.DEBUGGING['enemy_data']:
-                        myglobals.log.debug(" enemy #" + str(self.id) + "'s trajectory intersects enemy ship #" +
-                                            str(potential_target.id))
-                    hit = True
-                    if self.probable_target == potential_target and self.target_weight < myglobals.TARGET_WEIGHT_LIMIT:
-                        self.target_weight += 1
-                    elif self.probable_target != potential_target and self.target_weight > 0:
-                        self.target_weight -= 1
-                    else:
-                        self.probable_target = potential_target
-                        
-                    break
-                
-        if not hit:
-            for potential_target in bot_routines.myglobals.game_map.get_me().all_ships():
-                if hlt.intersect_segment_circle(
-                    self.ship_entity, potential_target, {"x": self.coord["x"], "y": self.coord["y"],
-                                                         "r": potential_target.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
-                    if myglobals.DEBUGGING['enemy_data']:
-                        myglobals.log.debug(" enemy #" + str(self.id) + "'s trajectory intersects friendly ship #" +
-                                            str(potential_target.id))
-                    hit = True
-                    if self.probable_target == potential_target and self.target_weight < myglobals.TARGET_WEIGHT_LIMIT:
-                        self.target_weight += 1
-                    elif self.probable_target != potential_target and self.target_weight > 0:
-                        self.target_weight -= 1
-                    else:
-                        self.probable_target = potential_target
-                        
-                    break
+            hit = check_group_for_intersect(analytics.get_enemy_ships())
+            if not hit:
+                hit = check_group_for_intersect(myglobals.game_map.get_me().all_ships())
                 
         if not hit:
             if myglobals.DEBUGGING['enemy_data']:
                 myglobals.log.debug(" found no potential target/destination for enemy #" + str(self.id))
-            self.probable_target = None
             
+            if self.target_weight > 0:
+                self.target_weight -= 1
+            
+            if self.target_weight == 0:
+                self.probable_target = None
+            
+    def check_group_for_intersect(self, potential_intersect_targets):
+        """
+        Checks whether or not, within the allowable fudge factor, this enemy's
+        vector will cause it to intersect with one of the potential targets
+        passed to the method
         
+        Returns a boolean value depending on whether or not a potential
+        target was found in the values passed or not.
+        """
+        
+        hit = False
+        
+        for potential_target in potential_intersect_targets:
+            if hlt.intersect_segment_circle(
+                self.ship_entity, potential_target, {"x": self.coord["x"], "y": self.coord["y"],
+                                                         "r": potential_target.radius * myglobals.TARGET_INTERCEPT_FUDGE}):
+                if myglobals.DEBUGGING['enemy_data']:
+                    myglobals.log.debug(" entity #" + str(self.id) + "'s trajectory intersects entity #" +
+                                        str(potential_target.id))
+                hit = True
+                if self.probable_target == potential_target and self.target_weight < myglobals.TARGET_WEIGHT_LIMIT:
+                    self.target_weight += 1
+                elif self.probable_target != potential_target and self.target_weight > 0:
+                    self.target_weight -= 1
+                else:
+                    self.probable_target = potential_target
+                        
+                break
+                
+        return hit
+    
