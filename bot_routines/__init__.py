@@ -1,5 +1,5 @@
 import logging
-from . import analytics, navigation, offense, primary_action, myglobals
+from . import analytics, navigation, offense, primary_action, myglobals, telemetry
 from operator import itemgetter
 
 """
